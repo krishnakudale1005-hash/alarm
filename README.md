@@ -1,184 +1,120 @@
+<div align="center">
+
+<img src="assets/icon.png" alt="WakeLock Logo" width="120" height="120" style="border-radius: 24px"/>
+
 # ⏰ WakeLock — Smart Alarm App
 
-![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-blue)
-![Expo](https://img.shields.io/badge/Expo-SDK%2054-black)
-![License](https://img.shields.io/badge/license-MIT-green)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
-![Version](https://img.shields.io/badge/version-1.0.0-purple)
-![Tests](https://img.shields.io/badge/tests-Jest-orange)
+**The alarm that won't let you sleep through.**
 
-A production-ready smart alarm app built with **Expo React Native**. Forces you to actually wake up by requiring you to complete a task before the alarm turns off. Works **100% offline** — no backend server required.
+[![CI Tests](https://github.com/krishnakudale1005-hash/alarm/actions/workflows/ci.yml/badge.svg)](https://github.com/krishnakudale1005-hash/alarm/actions)
+[![Version](https://img.shields.io/badge/version-1.1.0-6366f1?style=flat-square)](./VERSION)
+[![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Web-brightgreen?style=flat-square&logo=expo)](https://expo.dev)
+[![Expo SDK](https://img.shields.io/badge/Expo%20SDK-54-000020?style=flat-square&logo=expo&logoColor=white)](https://expo.dev)
+[![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?style=flat-square&logo=react&logoColor=white)](https://reactnative.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
+[![Tests](https://img.shields.io/badge/tests-90%20passing-success?style=flat-square&logo=jest)](./\_\_tests\_\_)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](./CONTRIBUTING.md)
 
-> **Note:** The `/backend` folder is included in the repo but is **optional** — it is only needed for future cloud sync. The app runs entirely on-device using `expo-sqlite`, `AsyncStorage`, and `expo-file-system`.
+<br/>
+
+*WakeLock forces you awake with math problems, memory games, and shake challenges — because snoozing is not an option.*
+
+[📱 Download APK](#-installation) · [🚀 Try on Web](https://github.com/krishnakudale1005-hash/alarm) · [🐛 Report Bug](https://github.com/krishnakudale1005-hash/alarm/issues) · [✨ Request Feature](https://github.com/krishnakudale1005-hash/alarm/issues)
+
+</div>
 
 ---
 
 ## 📸 Screenshots
 
-| Home Screen | Alarm Set | Alarm Ringing | Clock Suite |
-|---|---|---|---|
-| ![Home](screenshots/home.png) | ![Alarm](screenshots/alarm.png) | ![Ringing](screenshots/ringing.png) | ![Clock](screenshots/clock.png) |
+<div align="center">
 
-> 📷 Add your own screenshots to the `/screenshots` folder and update the table above.
+| Home Screen | Alarms | Clock Suite |
+|:-----------:|:------:|:-----------:|
+| ![Home](screenshots/home.png) | ![Alarms](screenshots/alarm.png) | ![Clock](screenshots/clock.png) |
 
----
+| Alarm Ringing | Stats | Dark Theme |
+|:-------------:|:-----:|:----------:|
+| ![Ringing](screenshots/ringing.png) | ![Stats](screenshots/stats.png) | ![Dark](screenshots/dark.png) |
 
-## 🎬 Demo
+</div>
 
-> [Watch demo video](https://your-demo-link-here.com)
-
-![App Demo](screenshots/demo.gif)
-
-> 🎥 Record a demo with Expo Go and add the GIF to `/screenshots/demo.gif`.
+> 📹 **Demo GIF** — *Coming soon. Record with `npx expo start` and use screen recorder.*
 
 ---
 
 ## ✨ Features
 
 ### 🔔 Smart Alarm System
-- Set multiple alarms with custom times
-- Enable/disable individual alarms with a toggle switch
-- Alarms auto-disable after ringing (won't ring again without re-enabling)
-- **Background firing** — alarms fire even when app is closed (via `expo-background-fetch`)
-- **Local notifications** — scheduled with `expo-notifications`
+- ✅ **Multiple alarms** — set as many as you need
+- ✅ **Repeat days** — daily, weekdays, weekends, custom
+- ✅ **5-minute snooze** with live countdown timer
+- ✅ **Custom ringtones** — upload your own MP3 (web + native)
+- ✅ **3 preset ringtones** — alarm, chime, digital
 
-### 🧠 Wake-Up Tasks (Choose One Per Alarm)
+### 🧠 Wake-Up Tasks (Can't dismiss without completing!)
 | Task | Description |
 |------|-------------|
-| 🧮 Math Problem | Solve a random arithmetic problem |
-| 🧠 Memory Game | Repeat a 4-step light pattern |
-| 📱 Shake to Wake | Shake your phone 50 times |
+| 🧮 **Math Problem** | Solve arithmetic — forces your brain online |
+| 🧠 **Memory Game** | Repeat a light sequence — no auto-pilot dismissal |
+| 📱 **Shake to Wake** | Shake your phone 50× — gets you physically moving |
 
-### 🔊 Audio & UX
-- **Gentle Wake:** Volume fades in over 30 seconds
-- **Volume Lock:** Gradually increases to max
-- **12-hour Format:** AM/PM across all screens
-- **Custom Ringtones:** Save audio files locally on device
+### 🕐 Clock Suite
+- 🕐 Analog + digital clock (12hr format)
+- 🌍 World clock — multiple time zones
+- ⏱️ Stopwatch with lap tracking
+- ⏳ Countdown timer
 
-### 🕒 Clock Suite
-- **World Clock:** Track time across 8 global cities
-- **Stopwatch:** High-precision lap timer
-- **Timer:** Elegant countdown timer
-- **Analog Clock:** Classic clock view
+### 📊 Sleep Analytics
+- 📈 7-day sleep duration chart
+- 🏆 Best/worst sleep day analysis
+- 🔥 Sleep streak tracker
+- 💤 Average sleep quality score
 
-### 📊 Sleep Tracking
-- Bedtime Mode toggle — tracks sleep duration automatically
-- Sleep stats persisted in local SQLite database
-- 7-day chart with best/worst/average analysis
-
----
-
-## 📁 Project Structure
-
-```
-WakeLock/
-├── App.js                        # Root navigator + foreground poller + background task registration
-├── app.json                      # Expo config (permissions, plugins)
-├── index.js                      # Entry point
-├── assets/                       # Images, audio files
-│   ├── alarm.mp3
-│   ├── chime.mp3
-│   └── digital.mp3
-├── screenshots/                  # App screenshots for README
-├── src/
-│   ├── constants/
-│   │   └── theme.js              # Color palette & shadow tokens
-│   ├── services/
-│   │   ├── StorageService.js     # All local DB/storage operations (replaces backend API)
-│   │   └── AlarmScheduler.js    # Background task + notification scheduling
-│   ├── utils/
-│   │   └── alarmUtils.js         # Pure utility functions (time matching, conversions)
-│   └── screens/
-│       ├── HomeScreen.js         # Dashboard + Weather + Sleep status
-│       ├── AlarmSetScreen.js     # Alarm management (CRUD)
-│       ├── AlarmRingingScreen.js # Full-screen alarm with puzzle tasks
-│       ├── ClockScreen.js        # Analog, World, Stopwatch, Timer
-│       └── StatsScreen.js        # Sleep analytics & charts
-├── __tests__/                    # Jest test suite
-│   ├── unit/
-│   ├── components/
-│   └── integration/
-├── .github/                      # GitHub templates
-│   ├── CONTRIBUTING.md
-│   ├── CHANGELOG.md
-│   ├── PULL_REQUEST_TEMPLATE.md
-│   └── ISSUE_TEMPLATE/
-│       ├── bug_report.md
-│       └── feature_request.md
-└── backend/                      # Optional — for future cloud sync only
-    ├── server.js
-    └── database.js
-```
-
----
-
-## 🚀 Local Development
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Expo Go app on your phone (or Android/iOS emulator)
-
-### Step 1 — Clone the repo
-```bash
-git clone https://github.com/krishnakudale1005-hash/alarm.git
-cd alarm
-```
-
-**What you should see:** The repo cloned into a new folder.
-
-### Step 2 — Install dependencies
-```bash
-npm install
-```
-
-**What you should see:** Packages installing, `node_modules/` folder created.
-
-### Step 3 — Start the development server
-```bash
-npm start
-```
-
-**What you should see:** A QR code in the terminal and Expo DevTools at `http://localhost:8081`.
-
-### Step 4 — Run on your device
-- **Android/iOS:** Scan the QR code with the Expo Go app
-- **Android Emulator:** Press `a` in the terminal
-- **iOS Simulator:** Press `i` in the terminal
-- **Web:** Press `w` in the terminal (alarm background features limited on web)
-
-> **Note:** No backend server is needed. The app runs fully offline.
-
-### Step 5 — Run tests
-```bash
-npm test
-```
+### 🌐 Works Everywhere
+- **Android** — full background alarms, shake detection, volume escalation
+- **iOS** — notification-based alarms, keep-awake screen
+- **Web** — full UI, HTML5 audio, file-based custom ringtone upload
 
 ---
 
 ## 🏗️ Architecture
 
-### Storage Layer
-| Data | Technology | Location |
-|------|-----------|----------|
-| Alarms | `expo-sqlite` | Device SQLite DB |
-| Sleep sessions | `expo-sqlite` | Device SQLite DB |
-| User settings | `AsyncStorage` | Device key-value store |
-| Custom ringtones | `expo-file-system` | `documents/ringtones/` |
-
-### Background Alarm Reliability
 ```
-App Startup → registerBackgroundAlarmCheck()
-    ↓
-BackgroundFetch (every 60s) → ALARM_CHECK_TASK
-    ↓
-Read enabled alarms from SQLite
-    ↓
-Compare current HH:mm with alarm times
-    ↓
-Match found → scheduleNotificationAsync({ trigger: null })
-    ↓
-Notification tapped → navigate to AlarmRingingScreen
+WakeLock (Offline-First)
+├── 📱 UI Layer
+│   ├── HomeScreen      → Sleep tracker + weather widget
+│   ├── AlarmSetScreen  → CRUD alarms + custom ringtone upload
+│   ├── AlarmRingingScreen → Full-screen takeover + wake task + snooze
+│   ├── ClockScreen     → Analog/digital/world/stopwatch/timer
+│   └── StatsScreen     → Sleep charts + analytics
+│
+├── 🗄️ Data Layer
+│   ├── StorageService.js  → expo-sqlite (native) / AsyncStorage (web)
+│   └── alarmUtils.js      → Pure time/alarm utility functions
+│
+└── 🔔 Background Layer
+    └── AlarmScheduler.js  → expo-task-manager + expo-background-fetch
+                             fires every 60s even when app is killed
+```
+
+### Background Alarm Flow
+```
+App killed/backgrounded
+        ↓
+expo-background-fetch (every 60s)
+        ↓
+ALARM_CHECK_TASK runs
+        ↓
+getAlarms() → expo-sqlite
+        ↓
+doesAlarmMatchNow() ?
+        ↓ YES
+scheduleNotificationAsync()
+        ↓
+User taps notification
+        ↓
+AlarmRingingScreen (Full-screen takeover)
 ```
 
 ---
@@ -187,90 +123,209 @@ Notification tapped → navigate to AlarmRingingScreen
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React Native (Expo SDK 54) |
-| Navigation | React Navigation v7 |
-| Local DB | expo-sqlite |
-| Settings | @react-native-async-storage/async-storage |
-| File Storage | expo-file-system |
-| Background Tasks | expo-task-manager + expo-background-fetch |
-| Notifications | expo-notifications |
-| Audio | expo-av |
-| Wake Lock | expo-keep-awake |
-| Sensors | expo-sensors (Accelerometer) |
-| Charts | react-native-chart-kit |
-| Testing | Jest + @testing-library/react-native |
+| **Framework** | ![Expo](https://img.shields.io/badge/Expo-000020?style=flat&logo=expo) React Native 0.81 |
+| **Local DB** | ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white) expo-sqlite v16 |
+| **Storage** | AsyncStorage (settings + web fallback) |
+| **Background** | expo-task-manager + expo-background-fetch |
+| **Notifications** | expo-notifications (daily triggers) |
+| **Audio** | expo-av (native) + HTML5 Audio API (web) |
+| **Navigation** | React Navigation v7 (bottom tabs + stack) |
+| **Charts** | react-native-chart-kit + react-native-svg |
+| **Sensors** | expo-sensors (Accelerometer — shake) |
+| **Testing** | Jest + @testing-library/react-native |
+| **CI/CD** | GitHub Actions |
 
 ---
 
-## 📱 Permissions Required
+## 🚀 Installation
 
-### Android
-- `WAKE_LOCK` — Keep screen on during alarm
-- `FOREGROUND_SERVICE` — Keep audio running in background
-- `RECEIVE_BOOT_COMPLETED` — Re-register alarms after device reboot
-- `SCHEDULE_EXACT_ALARM` — Precise alarm scheduling
-- `USE_FULL_SCREEN_INTENT` — Full-screen alarm takeover
-- `VIBRATE` — Vibration support
-- `POST_NOTIFICATIONS` — Show alarm notifications
+### Prerequisites
+```bash
+node >= 18
+npm >= 9
+expo-cli (latest)
+```
 
-### iOS
-- `UIBackgroundModes: fetch, audio` — Background fetch & audio playback
-- Notifications permission — Alarm alerts
+### Quick Start
+```bash
+# Clone the repo
+git clone https://github.com/krishnakudale1005-hash/alarm.git
+cd alarm
+
+# Install dependencies
+npm install
+
+# Start on web (instant, no setup needed)
+npm run web
+
+# Start with Expo Go (scan QR with Expo Go app)
+npm start
+
+# Start on Android emulator
+npm run android
+
+# Start on iOS simulator (Mac only)
+npm run ios
+```
+
+### Run Tests
+```bash
+# Run all 90 tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# With coverage report
+npm run test:coverage
+```
+
+---
+
+## 📦 Build for Production
+
+```bash
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login to Expo
+eas login
+
+# Build Android APK
+eas build --platform android --profile preview
+
+# Build Android AAB (Play Store)
+eas build --platform android --profile production
+
+# Build iOS
+eas build --platform ios --profile production
+```
+
+> ⚠️ **Important:** Background alarms require a production build via EAS. They do **not** work in Expo Go due to sandbox restrictions.
+
+---
+
+## 📚 StorageService API
+
+All data is stored locally — no internet required.
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `getAlarms()` | Fetch all alarms | `Alarm[]` |
+| `addAlarm(opts)` | Add new alarm | `{ success, id }` |
+| `deleteAlarm(id)` | Delete alarm by ID | `{ success }` |
+| `toggleAlarm(id, enabled)` | Enable/disable alarm | `{ success }` |
+| `getUserSettings()` | Get user preferences | `Settings` |
+| `updateUserSettings(updates)` | Save settings | `{ success }` |
+| `logSleepSession({ duration })` | Log a sleep session | `{ success }` |
+| `getSleepStats()` | Get 7-day sleep stats | `SleepStats` |
+| `saveCustomRingtone({ uri, filename })` | Save custom MP3 | `{ success, localUri }` |
+
+---
+
+## 🧪 Testing
+
+```
+Test Suites: 6 passed, 6 total
+Tests:       90 passed, 90 total
+Time:        1.5s
+```
+
+| Suite | File | Tests |
+|-------|------|-------|
+| Unit | `alarmUtils.test.js` | 25 |
+| Unit | `sleepStats.test.js` | 15 |
+| Unit | `StorageService.test.js` | 16 |
+| Component | `AlarmCard.test.js` | 12 |
+| Component | `TaskModal.test.js` | 14 |
+| Integration | `alarmFlow.test.js` | 8 |
+
+---
+
+## 📁 Project Structure
+
+```
+alarm/
+├── .github/
+│   ├── workflows/ci.yml          # GitHub Actions — auto-test on push
+│   ├── CONTRIBUTING.md
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── ISSUE_TEMPLATE/
+├── __mocks__/                    # Jest mocks for native modules
+├── __tests__/                    # 90 test cases
+│   ├── unit/
+│   ├── components/
+│   └── integration/
+├── assets/                       # App icons + audio files
+├── src/
+│   ├── components/AlarmCard.js
+│   ├── constants/theme.js
+│   ├── screens/
+│   │   ├── HomeScreen.js
+│   │   ├── AlarmSetScreen.js
+│   │   ├── AlarmRingingScreen.js
+│   │   ├── ClockScreen.js
+│   │   └── StatsScreen.js
+│   ├── services/
+│   │   ├── StorageService.js     # All local data ops
+│   │   └── AlarmScheduler.js    # Background task + notifications
+│   └── utils/alarmUtils.js      # Pure utility functions
+├── App.js                        # Root — nav + background setup
+├── app.json                      # Expo config + permissions
+├── metro.config.js               # WASM stub for web
+├── jest.config.js
+├── babel.config.jest.js
+├── CHANGELOG.md
+└── VERSION
+```
 
 ---
 
 ## 🗺️ Roadmap
 
-### v1.1.0
-- [ ] Cloud sync via optional backend (the `/backend` folder)
-- [ ] Repeat alarm support (Mon–Fri, weekends, custom)
-- [ ] Snooze functionality with configurable interval
-- [ ] Alarm label / name customization
-
-### v1.2.0
-- [ ] Weather integration with real API (OpenWeatherMap)
-- [ ] Sunrise alarm mode (gradual screen brightness)
-- [ ] iCloud / Google Drive backup for alarm settings
-- [ ] Apple Watch / Wear OS companion app
-
-### v2.0.0
-- [ ] AI-powered smart wake window (wakes you at lightest sleep phase)
-- [ ] Wearable heart rate integration
-- [ ] White noise / sleep sounds library
-- [ ] Social challenges (share wake streaks)
-
----
-
-## 🔌 API Reference (StorageService.js)
-
-These functions replace the old `localhost:3000` API:
-
-| Function | Description |
-|----------|-------------|
-| `getAlarms()` | Get all alarms |
-| `addAlarm(data)` | Add new alarm |
-| `deleteAlarm(id)` | Delete alarm by ID |
-| `toggleAlarm(id, enabled)` | Enable/disable alarm |
-| `getUserSettings()` | Get user preferences |
-| `updateBedtimeMode(data)` | Update bedtime state |
-| `logSleepSession(data)` | Log a sleep session |
-| `getSleepStats()` | Get 7-day sleep analytics |
-| `saveCustomRingtone(data)` | Store custom audio file |
+| Version | Feature |
+|---------|---------|
+| `v1.2` | ☁️ Cloud sync (Firebase) |
+| `v1.2` | 🌙 Dynamic bedtime recommendations (ML) |
+| `v1.3` | 🎵 Spotify / YouTube Music ringtone integration |
+| `v1.3` | 👥 Social sleep challenges |
+| `v2.0` | ⌚ Wear OS / watchOS companion app |
+| `v2.0` | 🏥 Health app integration (Google Fit / Apple Health) |
 
 ---
 
 ## 🤝 Contributing
 
-Please read [CONTRIBUTING.md](.github/CONTRIBUTING.md) before submitting pull requests.
+Contributions are what make open source amazing! See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
 
----
-
-## 📋 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+```bash
+# Fork → clone → branch → code → test → PR
+git checkout -b feat/your-feature-name
+npm test  # make sure all 90 tests pass
+git commit -m "feat: add your feature"
+git push origin feat/your-feature-name
+# Open a Pull Request 🎉
+```
 
 ---
 
 ## 📄 License
 
-MIT © Krishna Kudale
+Distributed under the **MIT License**. See `LICENSE` for more information.
+
+---
+
+## 👨‍💻 Author
+
+**Krishna Kudale**
+- GitHub: [@krishnakudale1005-hash](https://github.com/krishnakudale1005-hash)
+
+---
+
+<div align="center">
+
+⭐ **Star this repo if WakeLock helped you wake up on time!** ⭐
+
+*Built with ❤️ using React Native + Expo*
+
+</div>
