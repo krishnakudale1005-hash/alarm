@@ -18,32 +18,21 @@ A production-ready smart alarm app built with **Expo React Native** (frontend) a
 | 🧠 Memory Game | Repeat a 4-step light pattern |
 | 📱 Shake to Wake | Shake your phone 50 times |
 
-### 🔊 Volume Lock
-- Alarm plays at **maximum volume** and cannot be reduced
-- Volume restores to 100% every 2 seconds automatically
-- Plays even in **Silent Mode** (iOS)
-- Will not be interrupted by other apps
+### 🔊 Audio & UX
+- **Gentle Wake:** Volume fades in over 30 seconds for a smoother wake-up
+- **Volume Lock:** Alarm forces maximum volume every few seconds
+- **12-hour Format:** Support for AM/PM across all screens
+- **Custom Ringtones:** Upload your own audio via web interface
 
-### 📵 Wake Lock (Screen stays ON)
-- Screen stays **fully awake** while alarm is ringing
-- Alarm keeps playing even in the **background**
-- Persistent notification shown — cannot be dismissed until task is complete
-- Android `WAKE_LOCK` permission enables deep OS-level screen hold
+### 🕒 Clock Suite
+- **World Clock:** Track time across multiple global cities
+- **Stopwatch:** High-precision lap timer
+- **Timer:** Elegant countdown timer with sound alerts
+- **Analog Clock:** Classic clock view for your home dashboard
 
-### 😴 Bedtime Mode
-- Toggle to start tracking sleep
-- Toggle off in the morning to record your sleep duration automatically
-- Sleep data stored in local SQLite database
-
-### 📊 Sleep Statistics
-- 7-day bar chart of sleep durations
-- Average, best, and worst sleep days
-- Sleep quality indicator (Excellent / Good / Fair / Poor)
-- Day streak counter
-
-### 🔔 Ringtone Options
-- 3 built-in ringtones: Alarm, Chime, Digital
-- Upload your own custom audio file (web)
+### ⛅ Weather & Insights
+- **Weather Widget:** Live temperature and condition status on home screen
+- **Sleep Quality:** Smart analysis of your sleep duration patterns
 
 ---
 
@@ -102,10 +91,11 @@ ALAM/
 │   ├── constants/
 │   │   └── theme.js          # Color palette & shadow tokens
 │   └── screens/
-│       ├── HomeScreen.js     # Dashboard + bedtime toggle
-│       ├── AlarmSetScreen.js # Alarm list + add/delete/toggle
-│       ├── AlarmRingingScreen.js # Full-screen alarm + tasks
-│       └── StatsScreen.js    # Sleep charts & stats
+│       ├── HomeScreen.js         # Dashboard + Weather + Status
+│       ├── AlarmSetScreen.js     # Multiple Alarm management
+│       ├── AlarmRingingScreen.js # Full-screen takeover + Puzzle tasks
+│       ├── ClockScreen.js        # Analog, World, Stopwatch, Timer suite
+│       └── StatsScreen.js        # Sleep analytics & Charts
 └── backend/
     ├── server.js             # Express REST API
     ├── database.js           # SQLite setup & schema
