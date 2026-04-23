@@ -175,18 +175,21 @@ app.get('/api/user/stats', (req, res) => {
       const total = data.reduce((a, b) => a + b, 0);
       const activeCount = sortedRows.length || 1;
       const avgSleep = (total / activeCount).toFixed(1);
-      const bestSleep = Math.max(...data).toFixed(1);
-      const worstSleep = Math.min(...data.filter(d => d > 0)).toFixed(1);
+
+      const nonZeroData = data.filter(d => d > 0);
+      // FIX: guard against empty array — Math.min/max of empty returns Infinity/-Infinity
+      const bestSleep = nonZeroData.length > 0 ? Math.max(...nonZeroData).toFixed(1) : '0.0';
+      const worstSleep = nonZeroData.length > 0 ? Math.min(...nonZeroData).toFixed(1) : '0.0';
 
       res.json({
         lastSleep,
         avgSleep,
         streak: sortedRows.length,
-        bestDay: bestSleep > 0 ? "Last Active" : "None",
-        worstDay: worstSleep > 0 ? "Least Active" : "None",
+        bestDay: parseFloat(bestSleep) > 0 ? "Last Active" : "None",
+        worstDay: parseFloat(worstSleep) > 0 ? "Least Active" : "None",
         chartData: data,
         bestSleepVal: bestSleep,
-        worstSleepVal: worstSleep
+        worstSleepVal: worstSleep,
       });
     });
   });

@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
-import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 
 // Screens
 import HomeScreen from './src/screens/HomeScreen';
 import AlarmSetScreen from './src/screens/AlarmSetScreen';
+import ClockScreen from './src/screens/ClockScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import AlarmRingingScreen from './src/screens/AlarmRingingScreen';
 
@@ -16,7 +18,7 @@ import { COLORS } from './src/constants/theme';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
-    shouldPlaySound: true,
+    shouldPlaySound: false,
     shouldSetBadge: false,
   }),
 });
@@ -25,12 +27,10 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 export const navigationRef = createNavigationContainerRef();
 
-
-
 const AppTheme = {
-  ...DarkTheme,
+  ...DefaultTheme,
   colors: {
-    ...DarkTheme.colors,
+    ...DefaultTheme.colors,
     primary: COLORS.primary,
     background: COLORS.background,
     card: COLORS.surface,
@@ -42,22 +42,37 @@ const AppTheme = {
 function TabNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: { 
-          backgroundColor: '#ffffff', 
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
           borderTopColor: '#e2e8f0',
+          borderTopWidth: 1,
           height: 65,
           paddingBottom: 10,
-          ...COLORS.shadow
+          paddingTop: 5,
+          ...COLORS.shadow,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
-      }}
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size }) => {
+          let iconName;
+          if (route.name === 'Home')  iconName = 'home';
+          else if (route.name === 'Alarm') iconName = 'alarm';
+          else if (route.name === 'Clock') iconName = 'time';
+          else if (route.name === 'Stats') iconName = 'bar-chart';
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+      })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Alarm" component={AlarmSetScreen} />
-      <Tab.Screen name="Stats" component={StatsScreen} />
+      <Tab.Screen name="Home"  component={HomeScreen}  options={{ tabBarLabel: 'Home' }} />
+      <Tab.Screen name="Alarm" component={AlarmSetScreen} options={{ tabBarLabel: 'Alarms' }} />
+      <Tab.Screen name="Clock" component={ClockScreen} options={{ tabBarLabel: 'Clock' }} />
+      <Tab.Screen name="Stats" component={StatsScreen} options={{ tabBarLabel: 'Stats' }} />
     </Tab.Navigator>
   );
 }
@@ -72,13 +87,13 @@ export default function App() {
     };
     requestPermissions();
 
-    const sub1 = Notifications.addNotificationReceivedListener(notification => {
+    const sub1 = Notifications.addNotificationReceivedListener(() => {
       if (navigationRef.isReady()) {
         navigationRef.navigate('AlarmRinging');
       }
     });
 
-    const sub2 = Notifications.addNotificationResponseReceivedListener(response => {
+    const sub2 = Notifications.addNotificationResponseReceivedListener(() => {
       if (navigationRef.isReady()) {
         navigationRef.navigate('AlarmRinging');
       }
@@ -90,21 +105,21 @@ export default function App() {
       try {
         const now = new Date();
         const currentMinute = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        
+
         if (currentMinute === lastTriggeredMinute) return;
 
         const res = await fetch('http://localhost:3000/api/alarms');
         const alarms = await res.json();
-        
+
         const triggeringAlarm = alarms.find(a => a.enabled && a.time === currentMinute);
-        
+
         if (triggeringAlarm) {
           lastTriggeredMinute = currentMinute;
           if (navigationRef.isReady()) {
             navigationRef.navigate('AlarmRinging', { alarm: triggeringAlarm });
           }
         }
-      } catch(e) {}
+      } catch (e) {}
     }, 5000);
 
     return () => {
@@ -119,9 +134,9 @@ export default function App() {
       <StatusBar style="dark" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={TabNavigator} />
-        <Stack.Screen 
-          name="AlarmRinging" 
-          component={AlarmRingingScreen} 
+        <Stack.Screen
+          name="AlarmRinging"
+          component={AlarmRingingScreen}
           options={{ presentation: 'fullScreenModal', gestureEnabled: false, animation: 'fade' }}
         />
       </Stack.Navigator>
