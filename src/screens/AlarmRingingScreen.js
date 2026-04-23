@@ -4,7 +4,9 @@ import {
   Animated, BackHandler, Dimensions, Platform,
 } from 'react-native';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/theme';
+
 import { useNavigation } from '@react-navigation/native';
 import { Accelerometer } from 'expo-sensors';
 import * as Notifications from 'expo-notifications';
@@ -144,21 +146,26 @@ export default function AlarmRingingScreen({ route }) {
 
       const { sound } = await Audio.Sound.createAsync(
         asset,
-        { shouldPlay: true, isLooping: true, volume: 1.0 }
+        { shouldPlay: true, isLooping: true, volume: 0.05 } // Start very quiet
       );
       soundRef.current = sound;
 
-      // 🔊 VOLUME LOCK: restore volume to 1.0 every 300ms
-      // This aggressively resets volume if user tries to lower it
+      // 🔊 GENTLE WAKE & VOLUME LOCK:
+      // Fade in volume from 0.05 to 1.0 over 30 seconds
+      let currentVol = 0.05;
       volumeIntervalRef.current = setInterval(async () => {
         if (soundRef.current) {
-          try { await soundRef.current.setVolumeAsync(1.0); } catch (e) {}
+          try { 
+            if (currentVol < 1.0) currentVol += 0.05; 
+            await soundRef.current.setVolumeAsync(Math.min(currentVol, 1.0)); 
+          } catch (e) {}
         }
-      }, 300);
+      }, 1500); // 1.5s * 20 steps = 30 seconds
     } catch (e) {
       console.log('Sound error:', e);
     }
   };
+
 
   const stopSound = async () => {
     if (volumeIntervalRef.current) {
@@ -312,10 +319,11 @@ export default function AlarmRingingScreen({ route }) {
 
   // ─── Alarm Ringing Screen ─────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
-      <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+    <LinearGradient colors={['#1e1b4b', '#312e81', '#1e1b4b']} style={styles.container}>
+      <Animated.View style={{ transform: [{ scale: pulseAnim }], alignItems: 'center' }}>
         <Text style={styles.wakeUpText}>WAKE UP!</Text>
       </Animated.View>
+
 
       <Text style={styles.alarmTimeDisplay}>
         {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -392,9 +400,10 @@ export default function AlarmRingingScreen({ route }) {
         )}
 
       </Animated.View>
-    </View>
+    </LinearGradient>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -405,27 +414,31 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   wakeUpText: {
-    color: COLORS.primary,
+    color: '#fff',
     fontSize: 58,
     fontWeight: '900',
     letterSpacing: 2,
     textAlign: 'center',
+    textShadowColor: 'rgba(99, 102, 241, 0.8)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 20,
   },
   alarmTimeDisplay: {
-    color: COLORS.textSecondary,
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 20,
     marginTop: 6,
     marginBottom: 16,
     fontWeight: '500',
   },
   instruction: {
-    color: COLORS.textSecondary,
+    color: 'rgba(255,255,255,0.9)',
     fontSize: 16,
     marginBottom: 36,
     textAlign: 'center',
     fontWeight: '600',
     lineHeight: 24,
   },
+
   // Math
   taskCard: {
     backgroundColor: '#fff',

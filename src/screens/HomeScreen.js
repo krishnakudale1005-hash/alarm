@@ -118,7 +118,16 @@ export default function HomeScreen() {
   const [bedtimeMode, setBedtimeMode] = useState(false);
   const [sleepDuration, setSleepDuration] = useState('0');
   const [nextAlarm, setNextAlarm] = useState(null);
+  const [weather, setWeather] = useState({ temp: '--', condition: 'Loading...', city: 'New York' });
   const randomQuote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
+
+  // Mock Weather fetch
+  useEffect(() => {
+    setTimeout(() => {
+      setWeather({ temp: '24°', condition: 'Partly Cloudy', city: 'Mumbai' });
+    }, 2000);
+  }, []);
+
 
   // Live clock tick
   useEffect(() => {
@@ -216,6 +225,22 @@ export default function HomeScreen() {
               <Text style={styles.nextAlarmBadgeText}>⏰ {nextAlarm.time}</Text>
             </View>
           )}
+        </View>
+      </View>
+
+      {/* ── Weather & Status ── */}
+      <View style={styles.statusRow}>
+        <LinearGradient colors={['#3b82f6', '#2563eb']} style={styles.weatherCard}>
+          <Text style={styles.weatherTemp}>{weather.temp}</Text>
+          <View>
+            <Text style={styles.weatherCond}>{weather.condition}</Text>
+            <Text style={styles.weatherCity}>{weather.city}</Text>
+          </View>
+        </LinearGradient>
+        <View style={styles.healthCard}>
+          <Text style={styles.healthLabel}>Sleep Quality</Text>
+          <Text style={styles.healthScore}>{parseFloat(sleepDuration) >= 7 ? 'Optimal' : 'Fair'}</Text>
+          <Text style={styles.healthSub}>{sleepDuration}h tracked</Text>
         </View>
       </View>
 
@@ -335,6 +360,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start',
   },
   nextAlarmBadgeText: { color: COLORS.primary, fontWeight: '700', fontSize: 13 },
+
+  // Status cards
+  statusRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
+  weatherCard: {
+    flex: 1.2, borderRadius: 24, padding: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+  },
+  weatherTemp: { fontSize: 32, fontWeight: '800', color: '#fff' },
+  weatherCond: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  weatherCity: { fontSize: 11, color: 'rgba(255,255,255,0.8)' },
+  healthCard: {
+    flex: 1, backgroundColor: '#fff', borderRadius: 24, padding: 16,
+    borderWidth: 1, borderColor: '#f1f5f9', ...COLORS.shadow,
+  },
+  healthLabel: { fontSize: 11, fontWeight: '700', color: COLORS.textSecondary, textTransform: 'uppercase' },
+  healthScore: { fontSize: 18, fontWeight: '800', color: COLORS.primary, marginTop: 4 },
+  healthSub: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
 
   quote: {
     fontSize: 13, color: COLORS.textSecondary, fontStyle: 'italic',
