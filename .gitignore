@@ -1,6 +1,6 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
 
 # Expo
@@ -9,8 +9,10 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native builds
 .kotlin/
+/ios
+/android
 *.orig.*
 *.jks
 *.p8
@@ -21,7 +23,7 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Debug logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -30,23 +32,34 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# Windows
+Thumbs.db
+Desktop.ini
 
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# Backend
-backend/node_modules/
-backend/*.sqlite
-backend/uploads/*
-!backend/uploads/.gitkeep
-
-# Environment
+# Environment / secrets
 .env
 .env.local
 .env.production
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backend (optional cloud-sync module)
+backend/node_modules/
+backend/*.sqlite
+backend/*.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.log

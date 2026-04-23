@@ -3,16 +3,38 @@ import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   Animated, BackHandler, Dimensions, Platform,
 } from 'react-native';
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/theme';
-
 import { useNavigation } from '@react-navigation/native';
-import { Accelerometer } from 'expo-sensors';
-import * as Notifications from 'expo-notifications';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { toggleAlarm } from '../services/StorageService';
+import { getCustomRingtoneUri } from '../services/StorageService';
+
+// Native-only imports
+let Audio = null;
+let Accelerometer = null;
+let Notifications = null;
+let activateKeepAwakeAsync = null;
+let deactivateKeepAwake = null;
+
+if (Platform.OS !== 'web') {
+  const av = require('expo-av');
+  Audio = av.Audio;
+  const sensors = require('expo-sensors');
+  Accelerometer = sensors.Accelerometer;
+  Notifications = require('expo-notifications');
+  const keepAwake = require('expo-keep-awake');
+  activateKeepAwakeAsync = keepAwake.activateKeepAwakeAsync;
+  deactivateKeepAwake = keepAwake.deactivateKeepAwake;
+}
 
 const { width } = Dimensions.get('window');
+
+// Preset ringtone assets (bundled with the app) — native only
+const PRESET_ASSETS = Platform.OS !== 'web' ? {
+  'alarm.mp3':   require('../../assets/alarm.mp3'),
+  'chime.mp3':   require('../../assets/chime.mp3'),
+  'digital.mp3': require('../../assets/digital.mp3'),
+} : {};
 
 export default function AlarmRingingScreen({ route }) {
   const navigation = useNavigation();
@@ -39,6 +61,11 @@ export default function AlarmRingingScreen({ route }) {
   const [shakeCount, setShakeCount] = useState(0);
   const SHAKE_GOAL = 50;
 
+  // Snooze State
+  const [snoozed, setSnoozed] = useState(false);
+  const [snoozeSecondsLeft, setSnoozeSecondsLeft] = useState(0);
+  const snoozeTimerRef = useRef(null);
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -47,7 +74,7 @@ export default function AlarmRingingScreen({ route }) {
     const onBackPress = () => true;
     BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-    // 🔒 WAKE LOCK: keep screen on
+    // WAKE LOCK: keep screen on
     if (Platform.OS !== 'web') {
       activateKeepAwakeAsync().catch(() => {});
     }
@@ -57,18 +84,17 @@ export default function AlarmRingingScreen({ route }) {
 
     return () => {
       BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      if (snoozeTimerRef.current) clearInterval(snoozeTimerRef.current);
       cleanup();
     };
   }, []);
 
   // ─── Cleanup ──────────────────────────────────────────────────────────────
   const cleanup = async () => {
-    // Clear volume lock interval
     if (volumeIntervalRef.current) {
       clearInterval(volumeIntervalRef.current);
       volumeIntervalRef.current = null;
     }
-    // Stop and unload sound
     if (soundRef.current) {
       try {
         await soundRef.current.stopAsync();
@@ -76,15 +102,12 @@ export default function AlarmRingingScreen({ route }) {
         soundRef.current = null;
       } catch (e) {}
     }
-    // Stop accelerometer
     if (Platform.OS !== 'web') {
       try { Accelerometer.removeAllListeners(); } catch (e) {}
     }
-    // Deactivate wake lock
     if (Platform.OS !== 'web') {
       try { deactivateKeepAwake(); } catch (e) {}
     }
-    // Dismiss persistent notification
     if (notifIdRef.current) {
       try {
         await Notifications.dismissNotificationAsync(notifIdRef.current);
@@ -97,7 +120,7 @@ export default function AlarmRingingScreen({ route }) {
   const initAlarm = async () => {
     await playSound(alarm?.ringtone || 'alarm.mp3');
 
-    // 🔔 Persistent foreground notification (native only)
+    // Persistent foreground notification (native only)
     if (Platform.OS !== 'web') {
       try {
         const id = await Notifications.scheduleNotificationAsync({
@@ -125,47 +148,86 @@ export default function AlarmRingingScreen({ route }) {
     }
   };
 
-  // ─── Sound (with Volume Lock) ─────────────────────────────────────────────
+  // ─── Sound ────────────────────────────────────────────────────────────────
   const playSound = async (ringtoneName) => {
+
+    // ── Web fallback: HTML5 Audio API ──────────────────────────────────────
+    if (Platform.OS === 'web') {
+      try {
+        // Custom blob URL (from file picker) or preset asset URL
+        let audioUrl;
+        if (ringtoneName && (ringtoneName.startsWith('blob:') || ringtoneName.startsWith('http'))) {
+          audioUrl = ringtoneName; // custom ringtone blob URL
+        } else {
+          audioUrl = require('../../assets/alarm.mp3'); // default preset
+        }
+        const webAudio = new window.Audio(audioUrl);
+        webAudio.loop = true;
+        webAudio.volume = 0.05;
+        webAudio.play().catch(e => console.log('Web audio play error:', e));
+
+        // Wrap it to match the expo-av sound interface
+        soundRef.current = {
+          stopAsync:    () => { webAudio.pause(); webAudio.currentTime = 0; return Promise.resolve(); },
+          unloadAsync:  () => { webAudio.src = ''; return Promise.resolve(); },
+          setVolumeAsync: (vol) => { webAudio.volume = vol; return Promise.resolve(); },
+        };
+
+        // Gentle fade-in from 5% → 100%
+        let currentVol = 0.05;
+        volumeIntervalRef.current = setInterval(() => {
+          if (soundRef.current && currentVol < 1.0) {
+            currentVol = Math.min(currentVol + 0.05, 1.0);
+            webAudio.volume = currentVol;
+          }
+        }, 1500);
+      } catch (e) {
+        console.log('Web audio error:', e);
+      }
+      return;
+    }
+
+    // ── Native: expo-av ────────────────────────────────────────────────────
+    if (!Audio) return;
     try {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         playsInSilentModeIOS: true,
         staysActiveInBackground: true,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+        interruptionModeIOS: 1,
+        interruptionModeAndroid: 1,
         shouldDuckAndroid: false,
         playThroughEarpieceAndroid: false,
       });
 
       let asset;
-      if (ringtoneName === 'chime.mp3') asset = require('../../assets/chime.mp3');
-      else if (ringtoneName === 'digital.mp3') asset = require('../../assets/digital.mp3');
-      else if (ringtoneName === 'alarm.mp3') asset = require('../../assets/alarm.mp3');
-      else asset = { uri: `http://localhost:3000/uploads/${ringtoneName}` };
+      if (PRESET_ASSETS[ringtoneName]) {
+        asset = PRESET_ASSETS[ringtoneName];
+      } else {
+        const localUri = await getCustomRingtoneUri(ringtoneName);
+        asset = localUri ? { uri: localUri } : PRESET_ASSETS['alarm.mp3'];
+      }
 
       const { sound } = await Audio.Sound.createAsync(
         asset,
-        { shouldPlay: true, isLooping: true, volume: 0.05 } // Start very quiet
+        { shouldPlay: true, isLooping: true, volume: 0.05 }
       );
       soundRef.current = sound;
 
-      // 🔊 GENTLE WAKE & VOLUME LOCK:
-      // Fade in volume from 0.05 to 1.0 over 30 seconds
+      // Gentle wake: fade in from 0.05 to 1.0 over 30 seconds
       let currentVol = 0.05;
       volumeIntervalRef.current = setInterval(async () => {
         if (soundRef.current) {
-          try { 
-            if (currentVol < 1.0) currentVol += 0.05; 
-            await soundRef.current.setVolumeAsync(Math.min(currentVol, 1.0)); 
+          try {
+            if (currentVol < 1.0) currentVol += 0.05;
+            await soundRef.current.setVolumeAsync(Math.min(currentVol, 1.0));
           } catch (e) {}
         }
-      }, 1500); // 1.5s * 20 steps = 30 seconds
+      }, 1500);
     } catch (e) {
       console.log('Sound error:', e);
     }
   };
-
 
   const stopSound = async () => {
     if (volumeIntervalRef.current) {
@@ -211,7 +273,7 @@ export default function AlarmRingingScreen({ route }) {
   // ─── MEMORY GRID TASK ─────────────────────────────────────────────────────
   const startMemoryGame = () => {
     const seq = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9));
-    gridSequenceRef.current = seq; // store in ref to avoid stale closure
+    gridSequenceRef.current = seq;
     setUserSequence([]);
     showSequence(seq);
   };
@@ -232,7 +294,6 @@ export default function AlarmRingingScreen({ route }) {
     const newSeq = [...userSequence, idx];
     setUserSequence(newSeq);
 
-    // FIX: use gridSequenceRef.current to avoid stale closure
     if (idx !== gridSequenceRef.current[newSeq.length - 1]) {
       setUserSequence([]);
       shakeScreen();
@@ -262,6 +323,26 @@ export default function AlarmRingingScreen({ route }) {
     });
   };
 
+  // ─── Snooze Alarm (5 minutes) ─────────────────────────────────────────────
+  const snoozeAlarm = async () => {
+    await stopSound();
+    setSnoozed(true);
+    const SNOOZE_SECS = 5 * 60; // 5 minutes
+    setSnoozeSecondsLeft(SNOOZE_SECS);
+
+    snoozeTimerRef.current = setInterval(() => {
+      setSnoozeSecondsLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(snoozeTimerRef.current);
+          setSnoozed(false);
+          playSound(alarm?.ringtone || 'alarm.mp3');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   // ─── Complete Alarm ───────────────────────────────────────────────────────
   const completeAlarm = async () => {
     setSolved(true);
@@ -271,7 +352,6 @@ export default function AlarmRingingScreen({ route }) {
       try { deactivateKeepAwake(); } catch (e) {}
     }
 
-    // Dismiss the persistent notification
     if (notifIdRef.current) {
       try {
         await Notifications.dismissNotificationAsync(notifIdRef.current);
@@ -279,14 +359,10 @@ export default function AlarmRingingScreen({ route }) {
       } catch (e) {}
     }
 
-    // ✅ CRITICAL FIX: disable alarm in DB so it doesn't ring again
-    if (alarm?.id) {
+    // Disable alarm in local storage so it doesn't ring again
+    if (alarm?.id && (!alarm.repeatDays || alarm.repeatDays.trim() === '')) {
       try {
-        await fetch(`http://localhost:3000/api/alarms/${alarm.id}/toggle`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ enabled: false }),
-        });
+        await toggleAlarm(alarm.id, false);
       } catch (e) {}
     }
   };
@@ -323,7 +399,6 @@ export default function AlarmRingingScreen({ route }) {
       <Animated.View style={{ transform: [{ scale: pulseAnim }], alignItems: 'center' }}>
         <Text style={styles.wakeUpText}>WAKE UP!</Text>
       </Animated.View>
-
 
       <Text style={styles.alarmTimeDisplay}>
         {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -400,10 +475,27 @@ export default function AlarmRingingScreen({ route }) {
         )}
 
       </Animated.View>
+
+      {/* ── Snooze Section ── */}
+      {snoozed ? (
+        <View style={styles.snoozeCountdownBox}>
+          <Text style={styles.snoozeCountdownText}>😴 Snoozed</Text>
+          <Text style={styles.snoozeCountdownSecs}>
+            {Math.floor(snoozeSecondsLeft / 60)}:{(snoozeSecondsLeft % 60).toString().padStart(2, '0')}
+          </Text>
+          <Text style={styles.snoozeHint}>Alarm will ring again soon...</Text>
+        </View>
+      ) : (
+        !solved && (
+          <TouchableOpacity style={styles.snoozeBtn} onPress={snoozeAlarm}>
+            <Text style={styles.snoozeBtnText}>😴 Snooze 5 min</Text>
+          </TouchableOpacity>
+        )
+      )}
+
     </LinearGradient>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -438,8 +530,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 24,
   },
-
-  // Math
   taskCard: {
     backgroundColor: '#fff',
     padding: 30,
@@ -478,7 +568,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
-  // Memory
   memoryHint: {
     color: COLORS.primary,
     textAlign: 'center',
@@ -505,7 +594,6 @@ const styles = StyleSheet.create({
     ...COLORS.shadow,
     shadowColor: COLORS.primary,
   },
-  // Shake
   shakeContainer: {
     width: '100%',
     alignItems: 'center',
@@ -533,7 +621,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 14,
   },
-  // Success
   successEmoji: {
     fontSize: 72,
     marginBottom: 16,
@@ -567,5 +654,46 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     letterSpacing: 0.5,
+  },
+  // Snooze
+  snoozeBtn: {
+    marginTop: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 50,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+  },
+  snoozeBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  snoozeCountdownBox: {
+    marginTop: 24,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 24,
+    padding: 20,
+    minWidth: 200,
+  },
+  snoozeCountdownText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  snoozeCountdownSecs: {
+    color: '#fff',
+    fontSize: 48,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  snoozeHint: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    marginTop: 8,
   },
 });

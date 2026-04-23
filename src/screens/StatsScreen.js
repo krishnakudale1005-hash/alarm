@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { BarChart } from 'react-native-chart-kit';
 import { COLORS } from '../constants/theme';
 import { useIsFocused } from '@react-navigation/native';
+import { getSleepStats } from '../services/StorageService';
 
 export default function StatsScreen() {
   const isFocused = useIsFocused();
@@ -27,10 +28,9 @@ export default function StatsScreen() {
 
   const loadStats = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/user/stats');
-      const stats = await res.json();
+      const stats = await getSleepStats();
 
-      if (stats.chartData) {
+      if (stats) {
         setData({
           avgSleep: stats.avgSleep || '0.0',
           streak: stats.streak || 0,
@@ -40,7 +40,7 @@ export default function StatsScreen() {
           worstSleepVal: stats.worstSleepVal || '0.0',
           chartData: {
             labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{ data: stats.chartData }],
+            datasets: [{ data: stats.chartData || [0, 0, 0, 0, 0, 0, 0] }],
           },
         });
       }
@@ -49,7 +49,6 @@ export default function StatsScreen() {
     }
   };
 
-  // FIX: parse strings to floats before comparison
   const bestVal = parseFloat(data.bestSleepVal) || 0;
   const worstVal = parseFloat(data.worstSleepVal) || 0;
   const avgVal = parseFloat(data.avgSleep) || 0;
@@ -118,7 +117,6 @@ export default function StatsScreen() {
         <View style={styles.statCard}>
           <Text style={styles.statEmoji}>⭐</Text>
           <Text style={styles.statLabel}>Best</Text>
-          {/* FIX: use parseFloat() not string comparison */}
           <Text style={styles.statValue}>{bestVal > 0 ? `${bestVal.toFixed(1)}h` : '--'}</Text>
           <Text style={styles.statSubText}>{bestVal > 0 ? data.bestDay : 'N/A'}</Text>
         </View>
@@ -133,7 +131,6 @@ export default function StatsScreen() {
         <View style={styles.statCard}>
           <Text style={styles.statEmoji}>📉</Text>
           <Text style={styles.statLabel}>Worst</Text>
-          {/* FIX: use parseFloat() not string comparison */}
           <Text style={styles.statValue}>{worstVal > 0 ? `${worstVal.toFixed(1)}h` : '--'}</Text>
           <Text style={styles.statSubText}>{worstVal > 0 ? data.worstDay : 'N/A'}</Text>
         </View>
@@ -168,19 +165,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  streakEmoji: {
-    fontSize: 32,
-  },
-  streakNum: {
-    color: '#92400e',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  streakSub: {
-    color: '#b45309',
-    fontSize: 13,
-    marginTop: 2,
-  },
+  streakEmoji: { fontSize: 32 },
+  streakNum: { color: '#92400e', fontSize: 18, fontWeight: 'bold' },
+  streakSub: { color: '#b45309', fontSize: 13, marginTop: 2 },
   qualityCard: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
@@ -199,15 +186,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 6,
   },
-  qualityValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  qualityAvg: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-  },
+  qualityValue: { fontSize: 28, fontWeight: 'bold', marginBottom: 4 },
+  qualityAvg: { color: COLORS.textSecondary, fontSize: 14 },
   chartContainer: {
     backgroundColor: COLORS.card,
     borderRadius: 24,
@@ -226,15 +206,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  chart: {
-    borderRadius: 12,
-    marginLeft: -16,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
+  chart: { borderRadius: 12, marginLeft: -16 },
+  statsGrid: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   statCard: {
     backgroundColor: COLORS.card,
     flex: 1,
@@ -245,10 +218,7 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
     ...COLORS.shadow,
   },
-  statEmoji: {
-    fontSize: 22,
-    marginBottom: 6,
-  },
+  statEmoji: { fontSize: 22, marginBottom: 6 },
   statLabel: {
     color: COLORS.textSecondary,
     fontSize: 12,
@@ -257,15 +227,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  statValue: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  statSubText: {
-    color: COLORS.primary,
-    fontSize: 11,
-    marginTop: 3,
-    textAlign: 'center',
-  },
+  statValue: { color: COLORS.text, fontSize: 20, fontWeight: 'bold' },
+  statSubText: { color: COLORS.primary, fontSize: 11, marginTop: 3, textAlign: 'center' },
 });

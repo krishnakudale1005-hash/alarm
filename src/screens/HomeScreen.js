@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 're
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { COLORS } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getAlarms, getUserSettings, updateBedtimeMode, logSleepSession, getSleepStats } from '../services/StorageService';
 
 // ─── Inline Analog Clock (small, for home) ──────────────────────────────────
 function Hand({ angle, length, width, color, cx, cy }) {
@@ -141,14 +142,11 @@ export default function HomeScreen() {
 
   const loadData = async () => {
     try {
-      const [statsRes, settingsRes, alarmsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/user/stats'),
-        fetch('http://localhost:3000/api/user/settings'),
-        fetch('http://localhost:3000/api/alarms'),
+      const [stats, settings, alarms] = await Promise.all([
+        getSleepStats(),
+        getUserSettings(),
+        getAlarms(),
       ]);
-      const stats    = await statsRes.json();
-      const settings = await settingsRes.json();
-      const alarms   = await alarmsRes.json();
       if (stats.lastSleep !== undefined) setSleepDuration(stats.lastSleep.toString());
       if (settings.bedtimeMode !== undefined) setBedtimeMode(settings.bedtimeMode);
       if (Array.isArray(alarms)) {
@@ -175,27 +173,18 @@ export default function HomeScreen() {
       bedtimeStart = new Date().getTime().toString();
     } else {
       try {
-        const getRes = await fetch('http://localhost:3000/api/user/settings');
-        const set = await getRes.json();
-        if (set.bedtimeStart) {
-          const diffHrs = ((new Date().getTime() - parseInt(set.bedtimeStart)) / (1000 * 60 * 60)).toFixed(1);
+        const settings = await getUserSettings();
+        if (settings.bedtimeStart) {
+          const diffHrs = ((new Date().getTime() - parseInt(settings.bedtimeStart)) / (1000 * 60 * 60)).toFixed(1);
           if (parseFloat(diffHrs) > 0) {
             setSleepDuration(diffHrs);
-            await fetch('http://localhost:3000/api/user/sleep', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ duration: parseFloat(diffHrs) }),
-            });
+            await logSleepSession({ duration: parseFloat(diffHrs) });
           }
         }
       } catch (e) { console.log(e); }
     }
     try {
-      await fetch('http://localhost:3000/api/user/settings/bedtime', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bedtimeMode: value, bedtimeStart }),
-      });
+      await updateBedtimeMode({ bedtimeMode: value, bedtimeStart });
     } catch (e) { console.log(e); }
   };
 

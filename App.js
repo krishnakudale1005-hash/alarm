@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -12,16 +13,27 @@ import ClockScreen from './src/screens/ClockScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import AlarmRingingScreen from './src/screens/AlarmRingingScreen';
 
-import * as Notifications from 'expo-notifications';
 import { COLORS } from './src/constants/theme';
+import { getAlarms } from './src/services/StorageService';
+import { registerBackgroundAlarmCheck, getBackgroundFetchStatus } from './src/services/AlarmScheduler';
+import { doesAlarmMatchNow, shouldFireToday } from './src/utils/alarmUtils';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+// Native-only imports
+let Notifications = null;
+let BackgroundFetch = null;
+if (Platform.OS !== 'web') {
+  Notifications   = require('expo-notifications');
+  BackgroundFetch = require('expo-background-fetch');
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+}
+
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -78,40 +90,68 @@ function TabNavigator() {
 }
 
 export default function App() {
+  const [bgWarning, setBgWarning] = useState(false);
+
   useEffect(() => {
-    const requestPermissions = async () => {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
-        alert('WakeLock needs notification permissions to ring alarms.');
-      }
-    };
-    requestPermissions();
+    // Request notification permissions (native only)
+    if (Platform.OS !== 'web' && Notifications) {
+      Notifications.requestPermissionsAsync().then(({ status }) => {
+        if (status !== 'granted') {
+          alert('WakeLock needs notification permissions to ring alarms.');
+        }
+      });
+    }
 
-    const sub1 = Notifications.addNotificationReceivedListener(() => {
-      if (navigationRef.isReady()) {
-        navigationRef.navigate('AlarmRinging');
-      }
-    });
+    // Register background alarm check task (native only)
+    registerBackgroundAlarmCheck();
 
-    const sub2 = Notifications.addNotificationResponseReceivedListener(() => {
-      if (navigationRef.isReady()) {
-        navigationRef.navigate('AlarmRinging');
-      }
-    });
+    // Check background fetch status (native only)
+    if (Platform.OS !== 'web') {
+      (async () => {
+        try {
+          const status = await getBackgroundFetchStatus();
+          if (BackgroundFetch &&
+             (status === BackgroundFetch.BackgroundFetchStatus.Denied ||
+              status === BackgroundFetch.BackgroundFetchStatus.Restricted)) {
+            setBgWarning(true);
+          }
+        } catch (e) {}
+      })();
+    }
 
+    // Notification listeners (native only)
+    let sub1 = null, sub2 = null;
+    if (Platform.OS !== 'web' && Notifications) {
+      sub1 = Notifications.addNotificationReceivedListener((notification) => {
+        const alarmData = notification.request.content.data?.alarm;
+        if (navigationRef.isReady()) {
+          navigationRef.navigate('AlarmRinging', { alarm: alarmData || {} });
+        }
+      });
+      sub2 = Notifications.addNotificationResponseReceivedListener((response) => {
+        const alarmData = response.notification.request.content.data?.alarm;
+        if (navigationRef.isReady()) {
+          navigationRef.navigate('AlarmRinging', { alarm: alarmData || {} });
+        }
+      });
+    }
+
+    // Foreground alarm poller — checks every 5 seconds using LOCAL storage
     let lastTriggeredMinute = '';
 
-    const webPoller = setInterval(async () => {
+    const foregroundPoller = setInterval(async () => {
       try {
         const now = new Date();
         const currentMinute = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
         if (currentMinute === lastTriggeredMinute) return;
 
-        const res = await fetch('http://localhost:3000/api/alarms');
-        const alarms = await res.json();
-
-        const triggeringAlarm = alarms.find(a => a.enabled && a.time === currentMinute);
+        const alarms = await getAlarms();
+        const triggeringAlarm = alarms.find(a =>
+          a.enabled &&
+          doesAlarmMatchNow(a.time, now) &&
+          shouldFireToday(a.repeatDays || '', now)
+        );
 
         if (triggeringAlarm) {
           lastTriggeredMinute = currentMinute;
@@ -123,15 +163,22 @@ export default function App() {
     }, 5000);
 
     return () => {
-      sub1.remove();
-      sub2.remove();
-      clearInterval(webPoller);
+      if (sub1) sub1.remove();
+      if (sub2) sub2.remove();
+      clearInterval(foregroundPoller);
     };
   }, []);
 
   return (
     <NavigationContainer ref={navigationRef} theme={AppTheme}>
       <StatusBar style="dark" />
+      {bgWarning && (
+        <View style={styles.warningBanner}>
+          <Text style={styles.warningText}>
+            ⚠️ Background permissions not granted. Alarms may not fire when app is closed.
+          </Text>
+        </View>
+      )}
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={TabNavigator} />
         <Stack.Screen
@@ -143,3 +190,19 @@ export default function App() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  warningBanner: {
+    backgroundColor: '#fef3c7',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fde68a',
+  },
+  warningText: {
+    color: '#92400e',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});

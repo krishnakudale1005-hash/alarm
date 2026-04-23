@@ -16,7 +16,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.wakelock.alam",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": ["fetch", "audio", "processing"],
+        "NSMicrophoneUsageDescription": "WakeLock uses microphone for shake detection."
       }
     },
     "android": {
@@ -33,7 +34,10 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.USE_FULL_SCREEN_INTENT",
-        "android.permission.SCHEDULE_EXACT_ALARM"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ]
     },
     "web": {
@@ -54,7 +58,16 @@
           ],
           "mode": "production"
         }
-      ]
+      ],
+      [
+        "expo-background-fetch",
+        {
+          "backgroundFetchInterval": 60
+        }
+      ],
+      "expo-task-manager",
+      "expo-sqlite",
+      "expo-file-system"
     ],
     "extra": {
       "eas": {
