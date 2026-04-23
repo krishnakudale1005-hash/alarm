@@ -61,11 +61,6 @@ export default function AlarmRingingScreen({ route }) {
   const [shakeCount, setShakeCount] = useState(0);
   const SHAKE_GOAL = 50;
 
-  // Snooze State
-  const [snoozed, setSnoozed] = useState(false);
-  const [snoozeSecondsLeft, setSnoozeSecondsLeft] = useState(0);
-  const snoozeTimerRef = useRef(null);
-
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
@@ -84,7 +79,6 @@ export default function AlarmRingingScreen({ route }) {
 
     return () => {
       BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      if (snoozeTimerRef.current) clearInterval(snoozeTimerRef.current);
       cleanup();
     };
   }, []);
@@ -323,26 +317,6 @@ export default function AlarmRingingScreen({ route }) {
     });
   };
 
-  // ─── Snooze Alarm (5 minutes) ─────────────────────────────────────────────
-  const snoozeAlarm = async () => {
-    await stopSound();
-    setSnoozed(true);
-    const SNOOZE_SECS = 5 * 60; // 5 minutes
-    setSnoozeSecondsLeft(SNOOZE_SECS);
-
-    snoozeTimerRef.current = setInterval(() => {
-      setSnoozeSecondsLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(snoozeTimerRef.current);
-          setSnoozed(false);
-          playSound(alarm?.ringtone || 'alarm.mp3');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
   // ─── Complete Alarm ───────────────────────────────────────────────────────
   const completeAlarm = async () => {
     setSolved(true);
@@ -475,23 +449,6 @@ export default function AlarmRingingScreen({ route }) {
         )}
 
       </Animated.View>
-
-      {/* ── Snooze Section ── */}
-      {snoozed ? (
-        <View style={styles.snoozeCountdownBox}>
-          <Text style={styles.snoozeCountdownText}>😴 Snoozed</Text>
-          <Text style={styles.snoozeCountdownSecs}>
-            {Math.floor(snoozeSecondsLeft / 60)}:{(snoozeSecondsLeft % 60).toString().padStart(2, '0')}
-          </Text>
-          <Text style={styles.snoozeHint}>Alarm will ring again soon...</Text>
-        </View>
-      ) : (
-        !solved && (
-          <TouchableOpacity style={styles.snoozeBtn} onPress={snoozeAlarm}>
-            <Text style={styles.snoozeBtnText}>😴 Snooze 5 min</Text>
-          </TouchableOpacity>
-        )
-      )}
 
     </LinearGradient>
   );
